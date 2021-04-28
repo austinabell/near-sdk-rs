@@ -122,12 +122,12 @@ impl Block {
         }
     }
 
-    pub fn produce(&self, new_state_root: CryptoHash, epoch_length: u64) -> Block {
+    pub fn produce(self: &Arc<Self>, new_state_root: CryptoHash, epoch_length: u64) -> Block {
         Self {
             gas_price: self.gas_price,
             gas_limit: self.gas_limit,
             block_timestamp: self.block_timestamp + 1_000_000_000,
-            prev_block: Some(Arc::new(self.clone())),
+            prev_block: Some(Arc::clone(self)),
             state_root: new_state_root,
             block_height: self.block_height + 1,
             epoch_height: (self.block_height + 1) / epoch_length,
@@ -142,7 +142,7 @@ pub struct RuntimeStandalone {
     transactions: HashMap<CryptoHash, SignedTransaction>,
     outcomes: HashMap<CryptoHash, ExecutionOutcome>,
     profile: HashMap<CryptoHash, ProfileData>,
-    cur_block: Block,
+    cur_block: Arc<Block>,
     runtime: Runtime,
     tries: ShardTries,
     pending_receipts: Vec<Receipt>,
@@ -175,7 +175,7 @@ impl RuntimeStandalone {
             transactions: HashMap::new(),
             outcomes: HashMap::new(),
             profile: HashMap::new(),
-            cur_block: genesis_block,
+            cur_block: Arc::new(genesis_block),
             tx_pool: TransactionPool::new(),
             pending_receipts: vec![],
             epoch_info_provider: Box::new(MockEpochInfoProvider::new(
@@ -286,7 +286,8 @@ impl RuntimeStandalone {
         let (update, _) =
             self.tries.apply_all(&apply_result.trie_changes, 0).expect("Unexpected Storage error");
         update.commit().expect("Unexpected io error");
-        self.cur_block = self.cur_block.produce(apply_result.state_root, self.genesis.epoch_length);
+        self.cur_block =
+            Arc::new(self.cur_block.produce(apply_result.state_root, self.genesis.epoch_length));
 
         Ok(())
     }
@@ -317,7 +318,9 @@ impl RuntimeStandalone {
         let (trie_changes, _) = trie_update.finalize().expect("Unexpected Storage error");
         let (store_update, new_root) = self.tries.apply_all(&trie_changes, 0).unwrap();
         store_update.commit().expect("No io errors expected");
-        self.cur_block.state_root = new_root;
+        let mut new_block: Block = (*self.cur_block).clone();
+        new_block.state_root = new_root;
+        self.cur_block = Arc::new(new_block);
     }
 
     pub fn view_account(&self, account_id: &str) -> Option<Account> {
