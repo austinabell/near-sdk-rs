@@ -14,7 +14,7 @@ pub struct IndexMap<T>
 where
     T: BorshSerialize,
 {
-    pub(crate) prefix: Box<[u8]>,
+    pub prefix: Box<[u8]>,
     /// Cache for loads and intermediate changes to the underlying index map.
     /// The cached entries are wrapped in a [`Box`] to avoid existing pointers from being
     /// invalidated.
@@ -131,7 +131,8 @@ where
         entry.value_mut().as_mut()
     }
 
-    pub(crate) fn swap(&mut self, a: u32, b: u32) {
+    /// Swap two values in the map.
+    pub fn swap(&mut self, a: u32, b: u32) {
         if a == b {
             // Short circuit if indices are the same, also guarantees uniqueness below
             return;
