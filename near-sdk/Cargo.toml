@@ -24,7 +24,8 @@ serde_json = "1"
 near-sdk-macros = { path = "../near-sdk-macros", version = "~4.1.1" }
 near-sys = { path = "../sys", version = "0.2" }
 base64 = "0.13"
-borsh = { version = "0.9", features = ["const-generics"] }
+# TODO just a workaround for overriding for lib
+borsh = { git = "https://github.com/near/borsh-rs", rev = "aec5a4e9792361859cbb4a852b17317c738fc428"}
 bs58 = "0.4"
 schemars = { version = "0.8.8", optional = true }
 # Export dependencies for contracts
